@@ -12,7 +12,7 @@ func (db *DBModel) CreateUsersTable(ctx context.Context) error {
   
   query := `create table if not exists users (
     ID SERIAL PRIMARY KEY NOT NULL,
-    USERNAME TEXT NOT NULL,
+    USERNAME TEXT NOT NULL UNIQUE,
     PASSWORD TEXT NOT NULL
   )`
 
