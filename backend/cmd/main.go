@@ -6,8 +6,10 @@ import (
   "fmt"
   "time"
   "flag"
+  "context"
   "net/http"
   "backend/types"
+  _"github.com/lib/pq"
 )
 
 type application struct {
@@ -24,7 +26,20 @@ func main() {
 
   flag.IntVar(&cfg.Port, "port", port, "server for port to listen")
   flag.StringVar(&cfg.Env, "env", "development", "app environment")
+  // TODO: Add to note to the readme
+  // CHANGE DSN to your database setting 
+  flag.StringVar(&cfg.Db.Dsn, "dsn", "host=localhost user=postgres password=postgres dbname=postgres port=5432 sslmode=disable", "Database connection string")
   flag.Parse()
+
+  ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+  defer cancel()
+
+  db, err := connectDB(ctx, cfg)
+  if err != nil {
+    log.Println(err)
+  }
+
+  defer db.Close()
   
   app := &application {
     config: cfg,
@@ -42,7 +57,7 @@ func main() {
   
   // Run the server
   fmt.Printf("Server running on port %d", port)
-  err := server.ListenAndServe()
+  err = server.ListenAndServe()
   if err != nil {
     log.Println(err)
   }
