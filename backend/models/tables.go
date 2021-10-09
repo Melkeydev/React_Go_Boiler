@@ -46,3 +46,17 @@ func (db *DBModel) CreateDBLoadTable(ctx context.Context) error {
   log.Println("Created the DBLoad table")
   return nil
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

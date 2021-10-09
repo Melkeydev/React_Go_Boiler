@@ -21,6 +21,13 @@ type UserPayload struct {
   Password string `json:"password"`
 }
 
+// Create a generic DBLoad type
+type DBLoadPayload struct {
+  DBDataOne string `json:"db_data_one"`
+  DBDataTwo string `json:"db_data_two"`
+  DBDataThree string `json:"db_data_three"`
+}
+
 func (app *application) statusHandler(w http.ResponseWriter, r *http.Request) {
   response := struct {
     Status string
@@ -128,8 +135,41 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func (app *application) insertPayload(w http.ResponseWriter, r *http.Request) {
+  var payload DBLoadPayload
 
+  err := json.NewDecoder(r.Body).Decode(&payload)
+  if err != nil {
+    log.Println(err)
+    return
+  }
 
+  var dbload models.DBLoad
+  
+  dbload.DBDataOne = payload.DBDataOne
+  dbload.DBDataTwo = payload.DBDataTwo
+  dbload.DBDataThree = payload.DBDataThree
+
+  // we need to create the database hanlder
+  err = app.models.DB.InsertDBLoad(dbload)
+
+  if err != nil {
+    app.logger.Println(err)
+  }
+
+  _message := JSONMessage{
+    Message : "Succesfully posted data to the DB",
+  }
+
+  js, err := json.MarshalIndent(_message, "", "\t")
+  if err != nil {
+    app.logger.Println(err)
+  }
+
+  w.Header().Set("Context-Type", "application/json")
+  w.WriteHeader(http.StatusOK)
+  w.Write(js)
+}
 
 
 

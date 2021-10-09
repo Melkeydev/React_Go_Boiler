@@ -43,3 +43,48 @@ func (m *DBModel) GetUser(username string) (*User, error) {
 
   return &user, nil
 }
+
+func (m *DBModel) InsertDBLoad(load DBLoad) error {
+  ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+  defer cancel()
+
+  query := `insert into dbload(dbdataone, dbdatatwo, dbdatathree) VALUES($1, $2, $3)`
+
+  _, err := m.DB.ExecContext(ctx, query, load.DBDataOne, load.DBDataTwo, load.DBDataThree)
+
+  if err != nil {
+    log.Println(err)
+    return err
+  }
+
+  return nil
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
