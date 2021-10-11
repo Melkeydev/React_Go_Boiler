@@ -44,7 +44,7 @@ func (m *DBModel) GetUser(username string) (*User, error) {
   return &user, nil
 }
 
-func (m *DBModel) InsertDBLoad(load DBLoad) error {
+func (m *DBModel) InsertDBLoad(load *DBLoad) error {
   ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
   defer cancel()
 

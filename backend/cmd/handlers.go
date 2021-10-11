@@ -6,6 +6,7 @@ import (
   "encoding/json"
   "backend/models"
   "golang.org/x/crypto/bcrypt"
+  "backend/validator"
   //"github.com/julienschmidt/httprouter"
 
 )
@@ -144,13 +145,19 @@ func (app *application) insertPayload(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var dbload models.DBLoad
-  
-  dbload.DBDataOne = payload.DBDataOne
-  dbload.DBDataTwo = payload.DBDataTwo
-  dbload.DBDataThree = payload.DBDataThree
+  dbload := &models.DBLoad{
+    DBDataOne: payload.DBDataOne,
+    DBDataTwo: payload.DBDataTwo,
+    DBDataThree: payload.DBDataThree,
+  }
 
-  // we need to create the database hanlder
+  v := validator.New()
+
+  if models.ValidateDBLoad(v, dbload); !v.Valid() {
+    app.failedValidationResponse(w, r, v.Errors)
+    return
+  } 
+
   err = app.models.DB.InsertDBLoad(dbload)
 
   if err != nil {
