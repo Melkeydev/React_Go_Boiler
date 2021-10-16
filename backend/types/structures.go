@@ -6,4 +6,7 @@ type Config struct {
   Db struct {
     Dsn string
   }
+  Jwt struct {
+    Secret string
+  }
 }

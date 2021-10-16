@@ -31,6 +31,7 @@ func main() {
   // TODO: Add to note to the readme
   // CHANGE DSN to your database setting 
   flag.StringVar(&cfg.Db.Dsn, "dsn", "host=localhost user=postgres password=postgres dbname=postgres port=5432 sslmode=disable", "Database connection string")
+  flag.StringVar(&cfg.Jwt.Secret, "jwt-secret", "default-secret", "secret-key")
   flag.Parse()
 
   ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

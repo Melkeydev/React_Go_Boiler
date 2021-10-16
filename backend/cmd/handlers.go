@@ -1,12 +1,15 @@
 package main
 
 import (
+  "fmt"
   "log"
+  "time"
   "net/http"
   "encoding/json"
   "backend/models"
   "golang.org/x/crypto/bcrypt"
   "backend/validator"
+  "github.com/pascaldekloe/jwt"
   //"github.com/julienschmidt/httprouter"
 
 )
@@ -121,8 +124,27 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  // Validating a users token
+  var claims jwt.Claims
+  claims.Subject = fmt.Sprint(user.ID)
+  claims.Issued = jwt.NewNumericTime(time.Now())
+  claims.NotBefore = jwt.NewNumericTime(time.Now())
+  claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
+  // supposed to be a unique domain you own
+  claims.Issuer = "github.com/melkeydev"
+  claims.Audiences = []string{"github.com/melkeydev"}
+
+  jwtBytes, err := claims.HMACSign(jwt.HS256, []byte(app.config.Jwt.Secret))
+  if err != nil {
+    fmt.Println(err)
+    message := "Could not generate proper access"
+    app.errorResponse(w, r, http.StatusInternalServerError, message)
+    return
+  }
+
+  //app.writeJSON(w, http.StatusOK, string(jwtBytes), "Successfully logged in")
   _message := JSONMessage{
-    Message: "Succesfully logged in",
+    Message : string(jwtBytes),
   }
 
   js, err := json.MarshalIndent(_message, "", "\t")
@@ -133,6 +155,7 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Context-Type", "application/json")
   w.WriteHeader(http.StatusOK)
   w.Write(js)
+
 }
 
 
@@ -177,16 +200,5 @@ func (app *application) insertPayload(w http.ResponseWriter, r *http.Request) {
   w.WriteHeader(http.StatusOK)
   w.Write(js)
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
