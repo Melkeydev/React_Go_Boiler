@@ -2,12 +2,15 @@ package main
 
 import (
   "log"
+  "errors"
   "net/http"
   "context"
+  "strconv"
   "encoding/json"
   "database/sql"
   "backend/types"
   "backend/models"
+  "github.com/julienschmidt/httprouter"
 )
 
 //TODO: Add to the Readme
@@ -48,4 +51,13 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
   return nil
 }
 
+func (app *application) readIDParam(r *http.Request) (int64, error) {
+  params := httprouter.ParamsFromContext(r.Context())
+
+  id, err := strconv.ParseInt(params.ByName("id"),10,64)
+  if err != nil {
+    return 0, errors.New("invalid id parameter")
+  }
+  return id, nil
+}
 

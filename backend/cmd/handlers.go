@@ -4,6 +4,7 @@ import (
   "fmt"
   "log"
   "time"
+  "errors"
   "net/http"
   "encoding/json"
   "backend/models"
@@ -11,7 +12,6 @@ import (
   "backend/validator"
   "github.com/pascaldekloe/jwt"
   //"github.com/julienschmidt/httprouter"
-
 )
 
 // Create a JSON message struct
@@ -200,5 +200,82 @@ func (app *application) insertPayload(w http.ResponseWriter, r *http.Request) {
   w.WriteHeader(http.StatusOK)
   w.Write(js)
 }
+
+func (app *application) deleteDBload(w http.ResponseWriter, r *http.Request) {
+  id, err := app.readIDParam(r)
+  if err != nil {
+    app.notFoundResponse(w,r)
+  }
+
+  err = app.models.DB.Delete(id)
+  if err != nil {
+    switch {
+    case errors.Is(err, models.ErrRecordNotFound):
+      app.notFoundResponse(w, r)
+    default:
+      app.serverErrorResponse(w, r, err)
+    }
+    return
+  }
+
+  err = app.writeJSON(w, http.StatusOK, envelope{"message":"data deleted Succesfully"}, nil)
+  if err != nil {
+    app.serverErrorResponse(w, r, err)
+  }
+}
+
+//func (app *application) updateDataHandler(w http.ResponseWriter, r *http.Request) {
+  //id, err := app.readIDParam(r)
+
+  //if err != nil {
+    //app.notFoundResponse(w,r)
+    //return
+  //}
+
+  //if err != nil {
+    //switch {
+    //case errors.Is(err, models.ErrRecordNotFound):
+      //app.notFoundResponse(w,r)
+    //default:
+      //app.serverErrorResponse(w, r, err)
+    //}
+    //return
+  //}
+
+  //var input struct {
+
+  //}
+
+
+
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

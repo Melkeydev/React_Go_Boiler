@@ -13,7 +13,8 @@ func (db *DBModel) CreateUsersTable(ctx context.Context) error {
   query := `create table if not exists users (
     ID SERIAL PRIMARY KEY NOT NULL,
     USERNAME TEXT NOT NULL UNIQUE,
-    PASSWORD TEXT NOT NULL
+    PASSWORD TEXT NOT NULL,
+    VERSION INTEGER NOT NULL DEFAULT 1
   )`
 
   _, err := db.DB.ExecContext(ctx, query)
@@ -34,7 +35,8 @@ func (db *DBModel) CreateDBLoadTable(ctx context.Context) error {
     ID SERIAL PRIMARY KEY NOT NULL,
     DBDATAONE TEXT NOT NULL,
     DBDATATWO TEXT NOT NULL,
-    DBDATATHREE TEXT NOT NULL
+    DBDATATHREE TEXT NOT NULL,
+    VERSION INTEGER NOT NULL DEFAULT 1
   )`
 
   _, err := db.DB.ExecContext(ctx, query)

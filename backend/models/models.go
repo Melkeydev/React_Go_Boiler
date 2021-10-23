@@ -1,6 +1,7 @@
 package models 
 
 import (
+  "errors"
   "database/sql"
   "backend/validator"
 )
@@ -13,6 +14,12 @@ type DBModel struct {
   DB *sql.DB
 }
 
+var (
+  ErrRecordNotFound = errors.New("Record not found")
+  ErrEditConflict = errors.New("edit conflict")
+) 
+
+
 func NewModels(db *sql.DB) Models {
   return Models{
     DB: DBModel{DB: db},
@@ -24,6 +31,7 @@ type User struct {
   ID int64 `json:"id"`
   Username string `json:"username"`
   Password string `json"-"`
+  Version int32 `json:version`
 }
 
 // A generic payload structure got API calls
@@ -37,6 +45,7 @@ type DBLoad struct {
   DBDataOne string `json:db_data_one`
   DBDataTwo string `json:db_data_two`
   DBDataThree string `json:db_data_three`
+  Version int32 `json:version`
 }
 
 func ValidateDBLoad (v *validator.Validator, dbload *DBLoad) {
