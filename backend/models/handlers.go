@@ -46,20 +46,46 @@ func (m *DBModel) GetUser(username string) (*User, error) {
   return &user, nil
 }
 
-func (m *DBModel) InsertDBLoad(load *DBLoad) error {
+func (m *DBModel) GetData(id int64) (*DBLoad, error) {
+  if id < 1 {
+    return nil, ErrRecordNotFound
+  }
+
+  query := `SELECT dbdataone, dbdatatwo, dbdatathree, version from dbload where id = $1`
+
+  var load DBLoad
+
   ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
   defer cancel()
 
-  query := `insert into dbload(dbdataone, dbdatatwo, dbdatathree, version) VALUES($1, $2, $3, $4)`
-
-  _, err := m.DB.ExecContext(ctx, query, load.DBDataOne, load.DBDataTwo, load.DBDataThree)
+  err := m.DB.QueryRowContext(ctx, query, id).Scan(
+    &load.DBDataOne,
+    &load.DBDataTwo,
+    &load.DBDataThree,
+    &load.Version,
+  )
 
   if err != nil {
-    log.Println(err)
-    return err
+    switch {
+    case errors.Is(err, sql.ErrNoRows):
+      return nil, ErrRecordNotFound
+    default:
+      return nil, err
+    }
   }
 
-  return nil
+  return &load, nil
+}
+
+func (m *DBModel) InsertDBLoad(load *DBLoad) error {
+  query := `insert into dbload(dbdataone, dbdatatwo, dbdatathree) VALUES($1, $2, $3) returning version`
+
+  args := []interface{}{load.DBDataOne, load.DBDataTwo, load.DBDataThree}
+
+  ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+  defer cancel()
+
+  return m.DB.QueryRowContext(ctx, query, args...).Scan(&load.DBDataOne)
 }
 
 func (m *DBModel) Delete(id int64) error {
@@ -115,26 +141,6 @@ func (m *DBModel) Update(load *DBLoad) error {
 
   return nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -59,34 +59,3 @@ func ValidateDBLoad (v *validator.Validator, dbload *DBLoad) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

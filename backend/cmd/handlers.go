@@ -88,6 +88,31 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
   w.Write(js)
 }
 
+// This function is client side - to - database 
+func (app *application) getData(w http.ResponseWriter, r *http.Request) {
+  id, err := app.readIDParam(r)
+  if err != nil {
+    app.notFoundResponse(w, r)
+    return
+  }
+
+  data, err := app.models.DB.GetData(id)
+  if err != nil {
+    switch {
+    case errors.Is(err, models.ErrRecordNotFound):
+      app.notFoundResponse(w, r)
+    default:
+      app.serverErrorResponse(w, r, err)
+    }
+    return
+  }
+
+  err = app.writeJSON(w, http.StatusOK, envelope{"data":data}, nil)
+  if err != nil {
+    app.serverErrorResponse(w, r, err)
+  }
+}
+
 func (app *application) login(w http.ResponseWriter, r *http.Request) {
   var payload UserPayload
 
@@ -158,7 +183,6 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
 func (app *application) insertPayload(w http.ResponseWriter, r *http.Request) {
   var payload DBLoadPayload
 
@@ -182,23 +206,15 @@ func (app *application) insertPayload(w http.ResponseWriter, r *http.Request) {
   } 
 
   err = app.models.DB.InsertDBLoad(dbload)
-
   if err != nil {
-    app.logger.Println(err)
+    app.serverErrorResponse(w, r, err)
+    return
   }
 
-  _message := JSONMessage{
-    Message : "Succesfully posted data to the DB",
-  }
-
-  js, err := json.MarshalIndent(_message, "", "\t")
+  err = app.writeJSON(w, http.StatusOK, envelope{"data":dbload}, nil)
   if err != nil {
-    app.logger.Println(err)
+    app.serverErrorResponse(w, r, err)
   }
-
-  w.Header().Set("Context-Type", "application/json")
-  w.WriteHeader(http.StatusOK)
-  w.Write(js)
 }
 
 func (app *application) deleteDBload(w http.ResponseWriter, r *http.Request) {
@@ -224,31 +240,25 @@ func (app *application) deleteDBload(w http.ResponseWriter, r *http.Request) {
   }
 }
 
-//func (app *application) updateDataHandler(w http.ResponseWriter, r *http.Request) {
-  //id, err := app.readIDParam(r)
 
-  //if err != nil {
-    //app.notFoundResponse(w,r)
-    //return
-  //}
+func (app *application) updateDBRecord(w http.ResponseWriter, r* http.Request) {
+  id, err := app.readIDParam(r)
 
-  //if err != nil {
-    //switch {
-    //case errors.Is(err, models.ErrRecordNotFound):
-      //app.notFoundResponse(w,r)
-    //default:
-      //app.serverErrorResponse(w, r, err)
-    //}
-    //return
-  //}
+  if err != nil {
+    app.notFoundResponse(w, r)
+    return
+  }
 
-  //var input struct {
-
-  //}
-
-
-
-//}
+  data, err := app.models.DB.GetData(id)
+  if err != nil {
+    switch{
+    case errors.Is(err, models.ErrRecordNotFound):
+      app.notFoundResponse(w, r)
+    default:
+      app.serverErrorResponse(w, r, err)
+    }
+  }
+}
 
 
 
