@@ -117,12 +117,13 @@ func (m *DBModel) Delete(id int64) error {
 
 func (m *DBModel) Update(load *DBLoad) error {
   // This will handle DB update race condition
-  query := `UPDATE dbload SET dbdataone = $1, dbdatatwo = $2, dbdatathree = $3`
+  query := `UPDATE dbload SET dbdataone = $1, dbdatatwo = $2, dbdatathree = $3, version = version + 1 where id = $4 and VERSION = $5 RETURNING version`
 
   args := []interface{} {
     load.DBDataOne,
     load.DBDataTwo,
     load.DBDataThree,
+    load.ID,
     load.Version,
   }
 
