@@ -260,9 +260,9 @@ func (app *application) updateDBData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		DBDataOne   *string `json:DBDataOne`
-		DBDataTwo   *string `json:DBDataTwo`
-		DBDataThree *string `json:DBDataThree`
+		DBDataOne   *string `json:"db_data_one"`
+		DBDataTwo   *string `json:"db_data_two"`
+		DBDataThree *string `json:"db_data_three"`
 	}
 
 	err = app.readJSON(w, r, &input)
@@ -291,8 +291,8 @@ func (app *application) updateDBData(w http.ResponseWriter, r *http.Request) {
 	// validate the json data
 	if models.ValidateDBLoad(v, data); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
-		return 
-	}  
+		return
+	}
 
 	err = app.models.DB.Update(data)
 	if err != nil {
@@ -306,11 +306,52 @@ func (app *application) updateDBData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"data":data}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"data": data}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
+	var input struct{
+		DBDataOne string
+		models.Filters
+	}
+
+	v := validator.New()
+	qs := r.URL.Query()
+
+	// Query string readers go below
+	input.DBDataOne = app.readString(qs, "DBDataOne", "")
+	
+	input.Filters.Page = app.readInt(qs, "page" , 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafeList = []string{"id", "DBDataOne"}
+
+	if models.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	// This is where we are going to call our DB Hanlder
+	data, metadata, err :+ app.models.DB.
+	
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
