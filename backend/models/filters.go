@@ -56,7 +56,7 @@ func (f Filters) offset() int {
 	return (f.Page - 1) * f.PageSize
 }
 
-func (f Filters) createMetadata(totalRecords, page, pagesize int) Metadata {
+func createMetadata(totalRecords, page, pagesize int) Metadata {
 	if totalRecords == 0 {
 		return Metadata{}
 	}
