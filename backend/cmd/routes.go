@@ -14,6 +14,7 @@ func (app *application) routes() http.Handler {
   router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
   router.HandlerFunc(http.MethodGet, "/v1/status", app.statusHandler)
   router.HandlerFunc(http.MethodGet, "/v1/data/:id", app.getData)
+  router.HandlerFunc(http.MethodGet, "/v1/data", app.listAllDBData)
   router.HandlerFunc(http.MethodPost, "/v1/register", app.registerUser)
   router.HandlerFunc(http.MethodPost, "/v1/login/", app.login)
   router.HandlerFunc(http.MethodPost, "/v1/post_data/", app.insertPayload)

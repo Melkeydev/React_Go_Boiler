@@ -322,7 +322,7 @@ func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
 	qs := r.URL.Query()
 
 	// Query string readers go below
-	input.DBDataOne = app.readString(qs, "DBDataOne", "")
+	input.DBDataOne = app.readString(qs, "dbdataone", "")
 	
 	input.Filters.Page = app.readInt(qs, "page" , 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
@@ -334,11 +334,19 @@ func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
+	// We need to get all
 
-	// This is where we are going to call our DB Hanlder
-	data, metadata, err :+ app.models.DB.
-	
+	DBdata, metadata, err := app.models.DB.GetAll(input.DBDataOne, input.Filters) 
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 
+	err = app.writeJSON(w, http.StatusOK, envelope{"DBdata": DBdata, "metadata":metadata}, nil)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 
