@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-	//"github.com/julienschmidt/httprouter"
 )
 
 // Create a JSON message struct
@@ -39,7 +38,7 @@ func (app *application) statusHandler(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.MarshalIndent(response, "", "\t")
 	if err != nil {
-		app.logger.Println(err)
+		app.logger.PrintError(err, nil)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -61,7 +60,7 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	//hash paswords right away
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), 12)
 	if err != nil {
-		app.logger.Println(err)
+		app.logger.PrintError(err, nil)
 	}
 
 	user.Username = payload.Username
@@ -70,7 +69,7 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	//Actual intereact with the DB
 	err = app.models.DB.RegisterUser(user)
 	if err != nil {
-		app.logger.Println(err)
+		app.logger.PrintError(err, nil)
 	}
 
 	// Uses JSON message struct
@@ -80,7 +79,7 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.MarshalIndent(_message, "", "\t")
 	if err != nil {
-		app.logger.Println(err)
+		app.logger.PrintError(err, nil)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -118,13 +117,13 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		app.logger.Print(err)
+		app.logger.PrintError(err, nil)
 	}
 
 	//we need to get the user
 	user, err := app.models.DB.GetUser(payload.Username)
 	if err != nil {
-		app.logger.Println("User does not exist")
+		app.logger.PrintInfo("User does not exist", nil)
 		return
 	}
 
@@ -140,7 +139,7 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 
 		js, err := json.MarshalIndent(_message, "", "\t")
 		if err != nil {
-			app.logger.Println(err)
+			app.logger.PrintError(err, nil)
 		}
 
 		w.Header().Set("Context-Type", "application/json")
@@ -174,7 +173,7 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.MarshalIndent(_message, "", "\t")
 	if err != nil {
-		app.logger.Println(err)
+		app.logger.PrintError(err, nil)
 	}
 
 	w.Header().Set("Context-Type", "application/json")
@@ -348,14 +347,6 @@ func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 	}
 }
-
-
-
-
-
-
-
-
 
 
 

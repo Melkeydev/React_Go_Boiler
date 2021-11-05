@@ -7,24 +7,24 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/lib/pq"
-	"log"
 	"net/http"
 	"os"
 	"time"
+	"backend/jsonlog"
 )
 
 type application struct {
 	config types.Config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models models.Models
 }
 
 func main() {
 	var cfg types.Config
 	var port = 4000
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
-	fmt.Println("Loading server...")
+	logger.PrintInfo("Loading server...", nil)
 
 	flag.IntVar(&cfg.Port, "port", port, "server for port to listen")
 	flag.StringVar(&cfg.Env, "env", "development", "app environment")
@@ -39,7 +39,7 @@ func main() {
 
 	db, err := connectDB(ctx, cfg)
 	if err != nil {
-		log.Println(err)
+		logger.PrintFatal(err, nil)
 	}
 
 	defer db.Close()
@@ -60,10 +60,9 @@ func main() {
 	}
 
 	// Run the server
-	fmt.Printf("Server running on port %d", port)
+	logger.PrintInfo("Server running on port", nil)
 	err = server.ListenAndServe()
 	if err != nil {
-		log.Println(err)
+		logger.PrintFatal(err, nil)
 	}
-
 }
