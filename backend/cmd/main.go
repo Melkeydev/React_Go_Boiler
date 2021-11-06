@@ -3,7 +3,6 @@ package main
 import (
 	"backend/models"
 	"backend/types"
-	"context"
 	"flag"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -34,10 +33,8 @@ func main() {
 	flag.StringVar(&cfg.Jwt.Secret, "jwt-secret", "default-secret", "secret-key")
 	flag.Parse()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
-	db, err := connectDB(ctx, cfg)
+	db, err := connectDB(cfg)
 	if err != nil {
 		logger.PrintFatal(err, nil)
 	}

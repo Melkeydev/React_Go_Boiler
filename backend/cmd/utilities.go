@@ -4,16 +4,16 @@ import (
   "io"
   "fmt"
   "log"
+  "time"
+  "context"
   "strings"
   "errors"
   "net/url"
   "net/http"
-  "context"
   "strconv"
   "encoding/json"
   "database/sql"
   "backend/types"
-  "backend/models"
   "backend/validator"
   "github.com/julienschmidt/httprouter"
 )
@@ -23,17 +23,19 @@ import (
 
 type envelope map[string]interface{}
 
-func connectDB(ctx context.Context, cfg types.Config) (*sql.DB, error) {
+func connectDB(cfg types.Config) (*sql.DB, error) {
   db, err := sql.Open("postgres", cfg.Db.Dsn)
   if err != nil {
     log.Fatal("unable to connect to the database")
     return nil, err
   }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-  // This will create two new tables if they do not exist
-  (&models.DBModel{DB:db}).CreateUsersTable(ctx)
-  (&models.DBModel{DB:db}).CreateDBLoadTable(ctx)
-
+  err = db.PingContext(ctx)
+  if err != nil {
+    return nil, err
+  }
   return db, nil
 }
 

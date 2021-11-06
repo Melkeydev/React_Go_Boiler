@@ -5,12 +5,12 @@ import (
 	"backend/validator"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/pascaldekloe/jwt"
-	"golang.org/x/crypto/bcrypt"
+	//"fmt"
+	//"github.com/pascaldekloe/jwt"
+	//"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
-	"time"
+	//"time"
 )
 
 // Create a JSON message struct
@@ -47,44 +47,53 @@ func (app *application) statusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
-	var payload UserPayload
+	var input struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	err := app.readJSON(w, r, &input)
 	if err != nil {
-		log.Println(err)
+		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	var user models.User
+	user := &models.User{
+		Name:      input.Name,
+		Email:     input.Email,
+		Activated: false,
+	}
 
-	//hash paswords right away
-	hashPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), 12)
+	// generate the password hash with bcrypt
+	err = user.Password.Set(input.Password)
 	if err != nil {
-		app.logger.PrintError(err, nil)
+		app.serverErrorResponse(w, r, err)
+		return
 	}
 
-	user.Username = payload.Username
-	user.Password = string(hashPassword)
+	v := validator.New()
+	if models.ValidateUser(v, user); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
 
-	//Actual intereact with the DB
-	err = app.models.DB.RegisterUser(user)
+	err = app.models.DB.Insert(user)
 	if err != nil {
-		app.logger.PrintError(err, nil)
+		switch {
+		case errors.Is(err, models.ErrDuplicateEmail):
+			v.AddError("email", "a user with this email already exists")
+			app.failedValidationResponse(w, r, v.Errors)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
 
-	// Uses JSON message struct
-	_message := JSONMessage{
-		Message: "Succesfully registered a user",
-	}
-
-	js, err := json.MarshalIndent(_message, "", "\t")
+	err = app.writeJSON(w, http.StatusCreated, envelope{"user":user}, nil)
 	if err != nil {
-		app.logger.PrintError(err, nil)
+		app.serverErrorResponse(w, r, err)
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(js)
 }
 
 // This function is client side - to - database
@@ -112,75 +121,77 @@ func (app *application) getData(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) login(w http.ResponseWriter, r *http.Request) {
-	var payload UserPayload
+// TODO: Refactor this aswell
+//func (app *application) login(w http.ResponseWriter, r *http.Request) {
+	//var payload UserPayload
 
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		app.logger.PrintError(err, nil)
-	}
+	//err := json.NewDecoder(r.Body).Decode(&payload)
+	//if err != nil {
+		//app.logger.PrintError(err, nil)
+	//}
 
-	//we need to get the user
-	user, err := app.models.DB.GetUser(payload.Username)
-	if err != nil {
-		app.logger.PrintInfo("User does not exist", nil)
-		return
-	}
+	////we need to get the user
+	//// TODO: replace with get usr by email
+	//user, err := app.models.DB.GetUser(payload.Username)
+	//if err != nil {
+		//app.logger.PrintInfo("User does not exist", nil)
+		//return
+	//}
 
-	hashPassword := user.Password
+	//hashPassword := user.Password
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(payload.Password))
-	// Handle the error for hasing and comparing
-	if err != nil {
-		log.Println(err)
-		_message := JSONMessage{
-			Message: "Unauthorized",
-		}
+	//err = bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(payload.Password))
+	//// Handle the error for hasing and comparing
+	//if err != nil {
+		//log.Println(err)
+		//_message := JSONMessage{
+			//Message: "Unauthorized",
+		//}
 
-		js, err := json.MarshalIndent(_message, "", "\t")
-		if err != nil {
-			app.logger.PrintError(err, nil)
-		}
+		//js, err := json.MarshalIndent(_message, "", "\t")
+		//if err != nil {
+			//app.logger.PrintError(err, nil)
+		//}
 
-		w.Header().Set("Context-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(js)
-		return
-	}
+		//w.Header().Set("Context-Type", "application/json")
+		//w.WriteHeader(http.StatusOK)
+		//w.Write(js)
+		//return
+	//}
 
-	// Validating a users token
-	var claims jwt.Claims
-	claims.Subject = fmt.Sprint(user.ID)
-	claims.Issued = jwt.NewNumericTime(time.Now())
-	claims.NotBefore = jwt.NewNumericTime(time.Now())
-	claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
-	// supposed to be a unique domain you own
-	claims.Issuer = "github.com/melkeydev"
-	claims.Audiences = []string{"github.com/melkeydev"}
+	//// Validating a users token
+	//var claims jwt.Claims
+	//claims.Subject = fmt.Sprint(user.ID)
+	//claims.Issued = jwt.NewNumericTime(time.Now())
+	//claims.NotBefore = jwt.NewNumericTime(time.Now())
+	//claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
+	//// supposed to be a unique domain you own
+	//claims.Issuer = "github.com/melkeydev"
+	//claims.Audiences = []string{"github.com/melkeydev"}
 
-	jwtBytes, err := claims.HMACSign(jwt.HS256, []byte(app.config.Jwt.Secret))
-	if err != nil {
-		fmt.Println(err)
-		message := "Could not generate proper access"
-		app.errorResponse(w, r, http.StatusInternalServerError, message)
-		return
-	}
+	//jwtBytes, err := claims.HMACSign(jwt.HS256, []byte(app.config.Jwt.Secret))
+	//if err != nil {
+		//fmt.Println(err)
+		//message := "Could not generate proper access"
+		//app.errorResponse(w, r, http.StatusInternalServerError, message)
+		//return
+	//}
 
-	//app.writeJSON(w, http.StatusOK, string(jwtBytes), "Successfully logged in")
-	_message := JSONMessage{
-		Message: string(jwtBytes),
-	}
+	////app.writeJSON(w, http.StatusOK, string(jwtBytes), "Successfully logged in")
+	//_message := JSONMessage{
+		//Message: string(jwtBytes),
+	//}
 
-	js, err := json.MarshalIndent(_message, "", "\t")
-	if err != nil {
-		app.logger.PrintError(err, nil)
-	}
+	//js, err := json.MarshalIndent(_message, "", "\t")
+	//if err != nil {
+		//app.logger.PrintError(err, nil)
+	//}
 
-	w.Header().Set("Context-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(js)
+	//w.Header().Set("Context-Type", "application/json")
+	//w.WriteHeader(http.StatusOK)
+	//w.Write(js)
 
-}
+//}
 
 func (app *application) insertPayload(w http.ResponseWriter, r *http.Request) {
 	var payload DBLoadPayload
@@ -312,7 +323,7 @@ func (app *application) updateDBData(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
-	var input struct{
+	var input struct {
 		DBDataOne string
 		models.Filters
 	}
@@ -322,8 +333,8 @@ func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
 
 	// Query string readers go below
 	input.DBDataOne = app.readString(qs, "dbdataone", "")
-	
-	input.Filters.Page = app.readInt(qs, "page" , 1, v)
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 
 	input.Filters.Sort = app.readString(qs, "sort", "id")
@@ -335,28 +346,15 @@ func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
 	}
 	// We need to get all
 
-	DBdata, metadata, err := app.models.DB.GetAll(input.DBDataOne, input.Filters) 
+	DBdata, metadata, err := app.models.DB.GetAll(input.DBDataOne, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"DBdata": DBdata, "metadata":metadata}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"DBdata": DBdata, "metadata": metadata}, nil)
 
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

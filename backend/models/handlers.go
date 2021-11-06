@@ -5,46 +5,27 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 )
 
-func (m *DBModel) RegisterUser(user User) error {
+func (m *DBModel) Insert(user *User) error {
+	query := `INSERT INTO users (name, email, password_hash, activated) VALUES ($1, $2, $3, $4) RETURNING id, created_at, version`
+
+	args := []interface{}{user.Name, user.Email, user.Password.hash, user.Activated}
+	
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `insert into users(username, password) VALUES ($1, $2)`
-
-	_, err := m.DB.ExecContext(ctx, query, user.Username, user.Password)
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
-		log.Println(err)
-		return err
+		switch {
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail 
+		default:
+			return err
+		}
 	}
-
 	return nil
-}
-
-func (m *DBModel) GetUser(username string) (*User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	query := `select id, username, password from users where username = $1`
-
-	row := m.DB.QueryRowContext(ctx, query, username)
-
-	var user User
-
-	err := row.Scan(
-		&user.ID,
-		&user.Username,
-		&user.Password,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &user, nil
 }
 
 func (m *DBModel) GetData(id int64) (*DBLoad, error) {
