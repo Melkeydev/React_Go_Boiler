@@ -1,6 +1,8 @@
 package main
 
 import (
+	"backend/jsonlog"
+	"backend/mailer"
 	"backend/models"
 	"backend/types"
 	"flag"
@@ -9,13 +11,13 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"backend/jsonlog"
 )
 
 type application struct {
 	config types.Config
 	logger *jsonlog.Logger
 	models models.Models
+	mailer mailer.Mailer
 }
 
 func main() {
@@ -31,8 +33,16 @@ func main() {
 	// CHANGE DSN to your database setting
 	flag.StringVar(&cfg.Db.Dsn, "dsn", "host=localhost user=postgres password=postgres dbname=postgres port=5432 sslmode=disable", "Database connection string")
 	flag.StringVar(&cfg.Jwt.Secret, "jwt-secret", "default-secret", "secret-key")
-	flag.Parse()
 
+	// create flags
+	flag.StringVar(&cfg.SMTP.Host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.SMTP.Port, "smtp-port", 587, "SMTP Port")
+	// I need to actually put in my credentials
+	flag.StringVar(&cfg.SMTP.Username, "smtp-username", "foo", "SMTP host")
+	flag.StringVar(&cfg.SMTP.Password, "smtp-password", "foo", "SMTP host")
+	flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", "Thundercock <no-reply@thuder.cock.net>", "SMTP host")
+
+	flag.Parse()
 
 	db, err := connectDB(cfg)
 	if err != nil {
@@ -45,6 +55,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: models.NewModels(db),
+		mailer: mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Sender),
 	}
 
 	// Declare Server config
