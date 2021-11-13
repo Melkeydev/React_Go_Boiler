@@ -10,7 +10,7 @@ import (
 	//"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
-	//"time"
+	"time"
 )
 
 // Create a JSON message struct
@@ -90,13 +90,28 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+	token, err := app.models.DB.NewToken(user.ID, 3*24*time.Hour, models.ScopeActivation)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"user":user}, nil)
+	// THIS IS WHERE WE SEND TO OUR SMTP
+	// TODO: How to recover PANICS
+
+	go func(){
+		data := map[string]interface{}{
+			"activationToken": token.Plaintext,
+			"userID": user.ID,
+		}
+
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
+		if err != nil {
+			app.logger.PrintError(err, nil)
+		}
+	}()
+
+	err = app.writeJSON(w, http.StatusAccepted, envelope{"user":user}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -364,3 +379,66 @@ func (app *application) listAllDBData(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) activateUser(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		TokenPlaintext string `json:"token"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+
+	if models.ValidateTokenPlaintext(v, input.TokenPlaintext); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	user, err := app.models.DB.GetForToken(models.ScopeActivation, input.TokenPlaintext)
+	if err != nil {
+		switch{
+		case errors.Is(err, models.ErrRecordNotFound):
+			v.AddError("token", "invalid or expire auth token")
+			app.failedValidationResponse(w, r, v.Errors)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	user.Activated = true
+
+	err = app.models.DB.Update(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, models.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.models.DB.DeleteAlForUser(models.ScopeActivation, user.ID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user":user}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+
+
+
+
+
+
+

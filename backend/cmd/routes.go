@@ -20,6 +20,7 @@ func (app *application) routes() http.Handler {
   router.HandlerFunc(http.MethodPost, "/v1/post_data/", app.insertPayload)
   router.HandlerFunc(http.MethodPatch, "/v1/data/:id", app.updateDBData)
   router.HandlerFunc(http.MethodDelete, "/v1/data/:id", app.deleteDBload)
+  router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUser)
 
   return app.recoverPanic(app.rateLimit(app.enableCORS(router)))
 }

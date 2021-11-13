@@ -38,8 +38,8 @@ func main() {
 	flag.StringVar(&cfg.SMTP.Host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
 	flag.IntVar(&cfg.SMTP.Port, "smtp-port", 587, "SMTP Port")
 	// I need to actually put in my credentials
-	flag.StringVar(&cfg.SMTP.Username, "smtp-username", "foo", "SMTP host")
-	flag.StringVar(&cfg.SMTP.Password, "smtp-password", "foo", "SMTP host")
+	flag.StringVar(&cfg.SMTP.Username, "smtp-username", "a75b240dd811e8", "SMTP host")
+	flag.StringVar(&cfg.SMTP.Password, "smtp-password", "e8b5f447d86531", "SMTP host")
 	flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", "Thundercock <no-reply@thuder.cock.net>", "SMTP host")
 
 	flag.Parse()
