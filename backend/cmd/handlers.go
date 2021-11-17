@@ -325,6 +325,7 @@ func (app *application) updateDBData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// This needs to change
 	err = app.models.DB.Update(data)
 	if err != nil {
 		switch {
@@ -412,7 +413,8 @@ func (app *application) activateUser(w http.ResponseWriter, r *http.Request) {
 
 	user.Activated = true
 
-	err = app.models.DB.Update(user)
+	// This needs to change
+	err = app.models.DB.UpdateUser(user)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEditConflict):

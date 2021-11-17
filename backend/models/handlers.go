@@ -29,6 +29,7 @@ func (m *DBModel) Insert(user *User) error {
 	return nil
 }
 
+
 func (m *DBModel) GetData(id int64) (*DBLoad, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
@@ -98,6 +99,37 @@ func (m *DBModel) Delete(id int64) error {
 	return nil
 }
 
+func (m *DBModel) UpdateUser(user *User) error {
+	query := `UPDATE users SET name = $1, email = $2, password_hash = $3, activated = $4, version = version + 1 WHERE id = $5 AND version = $6 RETURNING version`
+
+	args := []interface{}{
+		user.Name,
+		user.Email,
+		user.Password.hash,
+		user.Activated,
+		user.ID,
+		user.Version,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.Version)
+	if err != nil {
+		switch {
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
+
+// This updates the database info - not the user
 func (m *DBModel) Update(load *DBLoad) error {
 	// This will handle DB update race condition
 	query := `UPDATE dbload SET dbdataone = $1, dbdatatwo = $2, dbdatathree = $3, version = version + 1 where id = $4 and VERSION = $5 RETURNING version`
@@ -203,6 +235,3 @@ func (m *DBModel) GetForToken(tokenScope, TokenPlaintext string) (*User, error) 
 
 	return &user, nil
 }
-
-
-

@@ -66,7 +66,6 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 			return false, err
 		}
 	}
-
 	return true, nil
 }
 

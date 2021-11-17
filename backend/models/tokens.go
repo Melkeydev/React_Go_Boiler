@@ -1,25 +1,26 @@
 package models
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base32"
 	"time"
-	"context"
 	//"database/sql"
 	"backend/validator"
 )
 
 const (
-	ScopeActivation = "activation"
+	ScopeActivation     = "activation"
+	ScopeAuthentication = "authentication"
 )
 
 type Token struct {
-	Plaintext string
-	Hash      []byte
-	UserID    int64
-	Expiry    time.Time
-	Scope     string
+	Plaintext string    `json:"token"`
+	Hash      []byte    `json:"-"`
+	UserID    int64     `json:"-"`
+	Expiry    time.Time `json:"expiry"`
+	Scope     string    `json:"-"`
 }
 
 // Token validation check
@@ -29,7 +30,7 @@ func ValidateTokenPlaintext(v *validator.Validator, tokenPlaintext string) {
 }
 
 func (m *DBModel) NewToken(userID int64, ttl time.Duration, scope string) (*Token, error) {
-	token ,err := generateToken(userID, ttl, scope)
+	token, err := generateToken(userID, ttl, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +50,7 @@ func (m *DBModel) InsertToken(token *Token) error {
 	_, err := m.DB.ExecContext(ctx, query, args...)
 	return err
 }
- 
+
 func (m *DBModel) DeleteAlForUser(scope string, userID int64) error {
 	query := `DELETE FROM tokens WHERE scope = $1 AND user_id = $2`
 
