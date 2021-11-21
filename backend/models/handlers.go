@@ -35,7 +35,7 @@ func (m *DBModel) GetData(id int64) (*DBLoad, error) {
 		return nil, ErrRecordNotFound
 	}
 
-	query := `SELECT dbdataone, dbdatatwo, dbdatathree, version from dbload where id = $1`
+	query := `SELECT dbdataone, dbdatatwo, dbdatathree, version from dataload where id = $1`
 
 	var load DBLoad
 
@@ -62,7 +62,7 @@ func (m *DBModel) GetData(id int64) (*DBLoad, error) {
 }
 
 func (m *DBModel) InsertDBLoad(load *DBLoad) error {
-	query := `insert into dbload(dbdataone, dbdatatwo, dbdatathree) VALUES($1, $2, $3) returning version`
+	query := `insert into dataload(dbdataone, dbdatatwo, dbdatathree) VALUES($1, $2, $3) returning version`
 
 	args := []interface{}{load.DBDataOne, load.DBDataTwo, load.DBDataThree}
 
@@ -77,7 +77,7 @@ func (m *DBModel) Delete(id int64) error {
 		return ErrRecordNotFound
 	}
 
-	query := `DELETE FROM dbload where id = $1`
+	query := `DELETE FROM dataload where id = $1`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

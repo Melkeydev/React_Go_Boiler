@@ -56,6 +56,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
+	// Creates a new auth token and saves it
 	token, err := app.models.DB.NewToken(user.ID, 24*time.Hour, models.ScopeAuthentication) 
 	if err != nil {
 		app.serverErrorResponse(w, r, err)

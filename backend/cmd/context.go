@@ -14,11 +14,12 @@ type contextKey string
 const userContextKey = contextKey("user")
 
 // setUserContext
-func (app *application) contextSetUser(r *http.Request, user models.User) *http.Request {
+func (app *application) contextSetUser(r *http.Request, user *models.User) *http.Request {
 	ctx := context.WithValue(r.Context(), userContextKey, user)
 	return r.WithContext(ctx)
 }  
 
+// TODO: need to investigate this
 //getUserContext
 func (app *application) contextGetUser(r *http.Request) *models.User {
 	user, ok := r.Context().Value(userContextKey).(*models.User)
