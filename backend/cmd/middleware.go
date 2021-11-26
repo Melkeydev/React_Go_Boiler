@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// We did not fully test this
 func (app *application) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -147,40 +148,33 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 	})
 }
 
-func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc{
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-
-		// The issue is here
+// We need to split our auth to handle activated routes and authenticated routes
+func(app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := app.contextGetUser(r)
 
+		// If this is true; You arent authorized
 		if user.IsAnonymous() {
 			app.authenticationRequiredResponse(w, r)
 			return
 		}
+
+		next.ServeHTTP(w, r)
+	})
+} 
+
+// We need this to wrap and call our requireAuthenticatedUser MW
+func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
 
 		if !user.Activated {
 			app.inactiveAccountResponse(w, r)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w,r )
 	})
+
+	return app.requireAuthenticatedUser(fn)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
